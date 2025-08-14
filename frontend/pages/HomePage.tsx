@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Header } from '../components/Header';
 import ViolinIcon from '../assets/violin_icon_final.png';
 import TrumpetIcon from '../assets/trumpet_icon.png';
@@ -17,16 +17,58 @@ export const HomePage: React.FC = () => {
     { text: 'Welcome to Cymbal Bank! How can I help you today?', sender: 'agent' }
   ]);
   const [isTranscriptOpen, setIsTranscriptOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const agentRef = useRef<import('../lib/wsAgent').RealtimeAgentClient | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const init = async () => {
+      const { RealtimeAgentClient } = await import('../lib/wsAgent');
+      if (!mounted) return;
+      const client = new RealtimeAgentClient({
+        onOpen: () => setConnected(true),
+        onClose: () => setConnected(false),
+        onText: (text) => setChatHistory((prev) => {
+          // If last is agent, append; else add new agent message
+          if (prev.length > 0 && prev[prev.length - 1].sender === 'agent') {
+            const copy = prev.slice();
+            copy[copy.length - 1] = { ...copy[copy.length - 1], text: copy[copy.length - 1].text + text };
+            return copy;
+          }
+          return [...prev, { text, sender: 'agent' }];
+        }),
+        onTurnComplete: () => {},
+        onIsSpeaking: (speaking) => setIsSpeaking(speaking),
+        onInterrupted: () => setIsRecording(false),
+        onTranscript: (text) => setMessage(text),
+      });
+      agentRef.current = client;
+      await client.connect(false);
+    };
+    init();
+    return () => {
+      mounted = false;
+      agentRef.current?.disconnect();
+    };
+  }, []);
 
   const handleSendMessage = () => {
     if (message.trim()) {
       setChatHistory((prev) => [...prev, { text: message, sender: 'user' }]);
+      agentRef.current?.sendText(message);
       setMessage('');
     }
   };
 
-  const handleVoiceInput = () => {
-    console.log('Voice input clicked');
+  const toggleRecording = () => {
+    if (isRecording) {
+      agentRef.current?.stopAudio();
+    } else {
+      agentRef.current?.startAudio();
+    }
+    setIsRecording(!isRecording);
   };
 
   return (
@@ -51,7 +93,7 @@ export const HomePage: React.FC = () => {
                 <div className="relative h-32 w-32 sm:h-36 sm:w-36 md:h-40 md:w-40 rounded-full overflow-hidden bg-black/70 border border-cymbal-border shadow-xl">
                   <img src={img.src} alt={img.alt} className="h-full w-full object-contain p-4" />
                   {/* spotlight */}
-                  <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className={`pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${isSpeaking ? '!opacity-100' : ''}`}>
                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 h-40 w-40 rounded-full blur-2xl" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.1) 60%, rgba(255,255,255,0) 70%)' }} />
                   </div>
                 </div>
@@ -114,11 +156,12 @@ export const HomePage: React.FC = () => {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleSendMessage();
               }}
+              disabled={isRecording}
             />
             <button
-              onClick={handleVoiceInput}
+              onClick={toggleRecording}
               aria-label="Voice input"
-              className="rounded-lg border border-cymbal-border bg-slate-900 hover:bg-slate-800 text-cymbal-text-primary px-3 py-3 transition-colors"
+              className={`rounded-lg border border-cymbal-border bg-slate-900 hover:bg-slate-800 text-cymbal-text-primary px-3 py-3 transition-colors ${isRecording ? 'animate-pulse' : ''}`}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -130,12 +173,21 @@ export const HomePage: React.FC = () => {
                 <path d="M19 11a1 1 0 1 0-2 0 5 5 0 1 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V21H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-3.08A7 7 0 0 0 19 11Z" />
               </svg>
             </button>
-            <button
-              onClick={handleSendMessage}
-              className="rounded-lg bg-cymbal-accent text-cymbal-deep-dark font-semibold px-5 py-3 hover:bg-cymbal-accent-hover transition-colors"
-            >
-              Send
-            </button>
+            {isRecording ? (
+              <button
+                onClick={toggleRecording}
+                className="rounded-lg bg-red-600 text-white font-semibold px-5 py-3 hover:bg-red-700 transition-colors"
+              >
+                Stop
+              </button>
+            ) : (
+              <button
+                onClick={handleSendMessage}
+                className="rounded-lg bg-cymbal-accent text-cymbal-deep-dark font-semibold px-5 py-3 hover:bg-cymbal-accent-hover transition-colors"
+              >
+                {connected ? 'Send' : 'Connecting...'}
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -1,7 +1,6 @@
 from google.adk.agents import Agent
-from google.adk.tools import tool
+# from google.adk.tools import tool
 
-@tool
 def proactively_identify_discounts(user_id: str):
     """
     Get users transactions for the last month or last 3 months. Identify the category, cross check with partners and see if they could have saved money by 
@@ -10,7 +9,6 @@ def proactively_identify_discounts(user_id: str):
     print(f"Proactively identifying discounts for user {user_id}")
     return {"status": "success", "potential_savings": "If you had instead purchased groceries from No Frills, you would have saved X amount of money by using this Y discount"}
 
-@tool
 def find_relevant_discounts(user_id: str, query: str):
     """
     Fetch partners for the user using the endpoint GET /api/partners/user/{user_id} and find discounts for the user query.
@@ -30,7 +28,7 @@ agent = Agent(
         proactively_identify_discounts,
         find_relevant_discounts,
     ],
-    examples=[
-        "I'm going to the supermarket. Are there any relevant coupons or discounts?",
-    ]
+    # examples=[
+    #     "I'm going to the supermarket. Are there any relevant coupons or discounts?",
+    # ]
 )

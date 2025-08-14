@@ -38,12 +38,11 @@ const OnboardingPage: React.FC = () => {
         <Header />
         <main className="w-full max-w-3xl mx-auto mt-12 mb-8">
           <div className="text-center mb-10">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-200 to-slate-400">
-              Tune Your Financial Experience
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-200 to-slate-400 mb-6">
+              The Rhythm of Your Wallet
             </h1>
             <p className="mt-4 text-lg text-cymbal-text-secondary">
-              Grant permissions to our AI financial co-pilot to personalize your journey. 
-              You can change these at any time.
+              You are now the conductor of your financial journey. Our agents are your orchestra and are here to help. Please grant permissions that you would like our agents to access!
             </p>
           </div>
 

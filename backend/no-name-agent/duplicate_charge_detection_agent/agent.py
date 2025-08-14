@@ -1,7 +1,5 @@
 from google.adk.agents import Agent
-from google.adk.tools import tool
 
-@tool
 def get_transactions(user_id: str):
     """Gets the user's transactions."""
     print(f"Getting transactions for user {user_id}")
@@ -12,13 +10,11 @@ def get_transactions(user_id: str):
         {"transaction_id": "125", "merchant": "Merchant B", "amount": 25.50, "date": "2025-08-14T11:00:00Z"},
     ]}
 
-@tool
 def get_credit_card_charges(user_id: str):
     """Gets the user's credit card charges. [TBD]"""
     print(f"Getting credit card charges for user {user_id}")
     return {"status": "success", "charges": []}
 
-@tool
 def human_approval(question: str):
     """Asks for human approval before taking an action."""
     print(f"Awaiting human approval for: {question}")
@@ -34,5 +30,4 @@ agent = Agent(
         get_credit_card_charges,
         human_approval,
     ],
-    escalate_to="support_agent",
 )

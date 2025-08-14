@@ -20,8 +20,8 @@ from google.adk.agents.run_config import RunConfig
 from google.genai import types
 
 from fastapi import FastAPI, WebSocket
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from agent import root_agent
 
@@ -87,6 +87,17 @@ async def agent_to_client_messaging(websocket, live_events):
         if not part:
             continue
 
+        # If it's a transcript, send it
+        is_transcript = part.text and not event.partial
+        if is_transcript:
+            message = {
+                "mime_type": "application/json",
+                "data": json.dumps({"transcript": part.text})
+            }
+            await websocket.send_text(json.dumps(message))
+            print(f"[AGENT TO CLIENT]: transcript: {part.text}")
+            continue
+
         # If it's audio, send Base64 encoded audio data
         is_audio = part.inline_data and part.inline_data.mime_type.startswith("audio/pcm")
         if is_audio:
@@ -139,18 +150,30 @@ async def client_to_agent_messaging(websocket, live_request_queue):
 
 app = FastAPI()
 
-STATIC_DIR = Path("static")
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+# Allow local frontend origins during development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://0.0.0.0:5173",
+        "*",  # relax during development; tighten for production
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+BASE_DIR = Path(__file__).resolve().parent
 
 
 @app.get("/")
 async def root():
-    """Serves the index.html"""
-    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+    return JSONResponse({"status": "ok", "message": "Backend running"})
 
 
 @app.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: int, is_audio: str):
+async def websocket_endpoint(websocket: WebSocket, user_id: str, is_audio: str):
     """Client websocket endpoint"""
 
     # Wait for client connection
