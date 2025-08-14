@@ -1,11 +1,13 @@
 
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { PermissionToggle } from '../components/PermissionToggle';
 import { PERMISSIONS_LIST } from '../constants';
 import type { PermissionName } from '../types';
 
 const OnboardingPage: React.FC = () => {
+  const navigate = useNavigate();
   const initialPermissions = useMemo(() => {
     return PERMISSIONS_LIST.reduce((acc, permission) => {
       acc[permission.id] = true;
@@ -29,6 +31,10 @@ const OnboardingPage: React.FC = () => {
       return acc;
     }, {} as Record<PermissionName, boolean>);
     setEnabledPermissions(allFalse);
+  };
+
+  const handleContinue = () => {
+    navigate('/home');
   };
 
   return (
@@ -68,7 +74,10 @@ const OnboardingPage: React.FC = () => {
           </div>
 
           <div className="mt-12 text-center">
-            <button className="w-full md:w-auto bg-cymbal-accent text-cymbal-deep-dark font-bold text-lg py-4 px-12 rounded-full transition-all duration-300 ease-in-out hover:bg-cymbal-accent-hover hover:scale-105 transform shadow-[0_0_20px_theme(colors.cymbal.accent)]">
+            <button
+              onClick={handleContinue}
+              className="w-full md:w-auto bg-cymbal-accent text-cymbal-deep-dark font-bold text-lg py-4 px-12 rounded-full transition-all duration-300 ease-in-out hover:bg-cymbal-accent-hover hover:scale-105 transform shadow-[0_0_20px_theme(colors.cymbal.accent)]"
+            >
               Continue
             </button>
           </div>

@@ -13,7 +13,6 @@ export type AgentEventHandlers = {
   onTurnComplete?: () => void;
   onInterrupted?: () => void;
   onIsSpeaking?: (speaking: boolean) => void;
-  onTranscript?: (text: string) => void;
 };
 
 export class RealtimeAgentClient {
@@ -75,17 +74,18 @@ export class RealtimeAgentClient {
     this.teardownAudio();
   }
 
-  sendText(message: string) {
+  sendText(message: string, agentId?: string) {
     if (!this.connected) return;
-    const payload = { mime_type: 'text/plain', data: message };
+    const payload: any = { mime_type: 'text/plain', data: message };
+    if (agentId) payload.agent_id = agentId;
     this.websocket!.send(JSON.stringify(payload));
   }
 
-  async startAudio() {
+  async startAudio(agentId?: string) {
     if (this.isAudioMode && this.connected && this.audioPlayerNode && this.audioRecorderNode) {
       return;
     }
-    await this.setupAudio();
+    await this.setupAudio(agentId);
     await this.connect(true); // reconnect in audio mode
   }
 
@@ -95,14 +95,14 @@ export class RealtimeAgentClient {
   }
 
   // Internal
-  private async setupAudio() {
+  private async setupAudio(agentId?: string) {
     const { startAudioPlayerWorklet } = await import('../../backend/static/js/audio-player.js');
     const { startAudioRecorderWorklet } = await import('../../backend/static/js/audio-recorder.js');
     const [playerNode, playerCtx] = await startAudioPlayerWorklet() as [AudioWorkletNode, AudioContext];
     this.audioPlayerNode = playerNode;
     this.audioPlayerContext = playerCtx;
 
-    const [recorderNode, recorderCtx, stream] = await startAudioRecorderWorklet((pcm: ArrayBuffer) => this.audioRecorderHandler(pcm)) as [AudioWorkletNode, AudioContext, MediaStream];
+    const [recorderNode, recorderCtx, stream] = await startAudioRecorderWorklet((pcm: ArrayBuffer) => this.audioRecorderHandler(pcm, agentId)) as [AudioWorkletNode, AudioContext, MediaStream];
     this.audioRecorderNode = recorderNode;
     this.audioRecorderContext = recorderCtx;
     this.micStream = stream;
@@ -135,14 +135,14 @@ export class RealtimeAgentClient {
     this.micStream = null;
   }
 
-  private audioRecorderHandler(pcmData: ArrayBuffer) {
+  private audioRecorderHandler(pcmData: ArrayBuffer, agentId?: string) {
     this.audioBuffer.push(new Uint8Array(pcmData));
     if (!this.bufferTimer) {
-      this.bufferTimer = window.setInterval(() => this.flushAudioBuffer(), 200);
+      this.bufferTimer = window.setInterval(() => this.flushAudioBuffer(agentId), 200);
     }
   }
 
-  private flushAudioBuffer() {
+  private flushAudioBuffer(agentId?: string) {
     if (this.audioBuffer.length === 0) return;
     let totalLength = 0;
     for (const chunk of this.audioBuffer) totalLength += chunk.length;
@@ -152,7 +152,7 @@ export class RealtimeAgentClient {
       combined.set(chunk, offset);
       offset += chunk.length;
     }
-    this.sendAudioPcm(combined.buffer);
+    this.sendAudioPcm(combined.buffer, agentId);
     this.audioBuffer = [];
   }
 
@@ -164,10 +164,11 @@ export class RealtimeAgentClient {
     if (this.audioBuffer.length > 0) this.flushAudioBuffer();
   }
 
-  private sendAudioPcm(buffer: ArrayBuffer) {
+  private sendAudioPcm(buffer: ArrayBuffer, agentId?: string) {
     if (!this.connected) return;
     const base64 = this.arrayBufferToBase64(buffer);
-    const payload = { mime_type: 'audio/pcm', data: base64 };
+    const payload: any = { mime_type: 'audio/pcm', data: base64 };
+    if (agentId) payload.agent_id = agentId;
     this.websocket!.send(JSON.stringify(payload));
   }
 
@@ -183,12 +184,6 @@ export class RealtimeAgentClient {
       this.isSpeaking = false;
       this.handlers.onIsSpeaking && this.handlers.onIsSpeaking(false);
       return;
-    }
-    if (message.mime_type === 'application/json') {
-      const data = JSON.parse(message.data!);
-      if (data.transcript) {
-        this.handlers.onTranscript && this.handlers.onTranscript(data.transcript);
-      }
     }
     if (message.mime_type === 'audio/pcm' && this.audioPlayerNode && message.data) {
       if (!this.isSpeaking) {

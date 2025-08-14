@@ -5,3 +5,5 @@ python-dotenv
 asyncclick
 gunicorn
 google-adk
+spotipy
+stripe

@@ -11,15 +11,47 @@ interface Message {
   sender: 'user' | 'agent';
 }
 
+const AGENTS = [
+  {
+    id: 'router_agent',
+    name: 'Cymbal',
+    role: 'Router Agent',
+    instrument: 'The Violin',
+    icon: ViolinIcon,
+  },
+  {
+    id: 'investments_agent',
+    name: 'Mila',
+    role: 'Investments Agent',
+    instrument: 'The Trumpet',
+    icon: TrumpetIcon,
+  },
+  {
+    id: 'daily_spendings_agent',
+    name: 'Kai',
+    role: 'Daily Spendings Agent',
+    instrument: 'The Flute',
+    icon: FluteIcon,
+  },
+  {
+    id: 'financial_agent',
+    name: 'Leo',
+    role: 'Big Spendings Agent',
+    instrument: 'The Trombone',
+    icon: TromboneIcon,
+  },
+];
+
 export const HomePage: React.FC = () => {
   const [message, setMessage] = useState('');
   const [chatHistory, setChatHistory] = useState<Message[]>([
-    { text: 'Welcome to Cymbal Bank! How can I help you today?', sender: 'agent' }
+    { text: 'Welcome to Cymbal Bank! Select an agent to talk to, or start typing to talk to our router agent.', sender: 'agent' }
   ]);
   const [isTranscriptOpen, setIsTranscriptOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const agentRef = useRef<import('../lib/wsAgent').RealtimeAgentClient | null>(null);
 
   useEffect(() => {
@@ -42,7 +74,6 @@ export const HomePage: React.FC = () => {
         onTurnComplete: () => {},
         onIsSpeaking: (speaking) => setIsSpeaking(speaking),
         onInterrupted: () => setIsRecording(false),
-        onTranscript: (text) => setMessage(text),
       });
       agentRef.current = client;
       await client.connect(false);
@@ -57,16 +88,23 @@ export const HomePage: React.FC = () => {
   const handleSendMessage = () => {
     if (message.trim()) {
       setChatHistory((prev) => [...prev, { text: message, sender: 'user' }]);
-      agentRef.current?.sendText(message);
+      agentRef.current?.sendText(message, selectedAgentId || undefined);
       setMessage('');
     }
+  };
+
+  const handleSelectAgent = (agent: (typeof AGENTS)[0]) => {
+    setSelectedAgentId(agent.id);
+    const message = `I would like to connect with the ${agent.role}.`;
+    setChatHistory((prev) => [...prev, { text: message, sender: 'user' }]);
+    agentRef.current?.sendText(message, agent.id);
   };
 
   const toggleRecording = () => {
     if (isRecording) {
       agentRef.current?.stopAudio();
     } else {
-      agentRef.current?.startAudio();
+      agentRef.current?.startAudio(selectedAgentId || undefined);
     }
     setIsRecording(!isRecording);
   };
@@ -85,17 +123,27 @@ export const HomePage: React.FC = () => {
           backgroundPosition: 'center bottom',
         }}
       >
+        <div className="text-center pt-16 sm:pt-24">
+          <h2 className="text-3xl font-bold tracking-tight text-slate-300 sm:text-4xl">Meet your Orchestra</h2>
+          <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-200 to-slate-400 mt-2">
+            The Rhythm of your Wallet
+          </h1>
+        </div>
         {/* Instruments positioned near bottom */}
         <div className="absolute left-1/2 -translate-x-1/2 bottom-28 sm:bottom-32 md:bottom-40">
           <div className="flex items-end justify-center gap-8 md:gap-10 flex-nowrap">
-            {[{src: ViolinIcon, alt: 'Violin profile'}, {src: TrumpetIcon, alt: 'Trumpet profile'}, {src: FluteIcon, alt: 'Flute profile'}, {src: TromboneIcon, alt: 'Trombone profile'}].map((img, idx) => (
-              <div key={idx} className="relative group">
-                <div className="relative h-32 w-32 sm:h-36 sm:w-36 md:h-40 md:w-40 rounded-full overflow-hidden bg-black/70 border border-cymbal-border shadow-xl">
-                  <img src={img.src} alt={img.alt} className="h-full w-full object-contain p-4" />
+            {AGENTS.map((agent) => (
+              <div key={agent.id} className="relative group flex flex-col items-center cursor-pointer" onClick={() => handleSelectAgent(agent)}>
+                <div className={`relative h-32 w-32 sm:h-36 sm:w-36 md:h-40 md:w-40 rounded-full overflow-hidden bg-black/70 border-2 shadow-xl transition-all ${selectedAgentId === agent.id ? 'border-cymbal-accent' : 'border-cymbal-border'}`}>
+                  <img src={agent.icon} alt={agent.instrument} className="h-full w-full object-contain p-4" />
                   {/* spotlight */}
                   <div className={`pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${isSpeaking ? '!opacity-100' : ''}`}>
                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 h-40 w-40 rounded-full blur-2xl" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.1) 60%, rgba(255,255,255,0) 70%)' }} />
                   </div>
+                </div>
+                <div className="mt-4 p-3 bg-slate-900/60 border border-cymbal-border rounded-lg text-center w-48">
+                  <p className="font-bold text-lg text-cymbal-text-primary truncate">{agent.instrument}</p>
+                  <p className="text-sm text-cymbal-text-secondary">{agent.name}, your {agent.role}</p>
                 </div>
               </div>
             ))}

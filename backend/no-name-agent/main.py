@@ -24,6 +24,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from agent import root_agent
+from investments_agent.agent import agent as investments_agent
+from daily_spendings_agent import daily_spendings_agent
+from financial_agent.agent import financial_agent
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 
@@ -32,13 +35,19 @@ load_dotenv()
 APP_NAME = "ADK Streaming example"
 
 
-async def start_agent_session(user_id, is_audio=False):
+async def start_agent_session(user_id, is_audio=False, agent_id=None):
     """Starts an agent session"""
 
     # Create a Runner
+    agent_map = {
+        "investments_agent": investments_agent,
+        "daily_spendings_agent": daily_spendings_agent,
+        "financial_agent": financial_agent
+    }
+
     runner = InMemoryRunner(
         app_name=APP_NAME,
-        agent=root_agent,
+        agent=agent_map.get(agent_id, root_agent),
     )
 
     # Create a Session
@@ -173,16 +182,16 @@ async def root():
 
 
 @app.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: str, is_audio: str):
+async def websocket_endpoint(websocket: WebSocket, user_id: str, is_audio: str, agent_id: str = None):
     """Client websocket endpoint"""
 
     # Wait for client connection
     await websocket.accept()
-    print(f"Client #{user_id} connected, audio mode: {is_audio}")
+    print(f"Client #{user_id} connected, audio mode: {is_audio}, agent_id: {agent_id}")
 
     # Start agent session
     user_id_str = str(user_id)
-    live_events, live_request_queue = await start_agent_session(user_id_str, is_audio == "true")
+    live_events, live_request_queue = await start_agent_session(user_id_str, is_audio == "true", agent_id)
 
     # Start tasks
     agent_to_client_task = asyncio.create_task(
