@@ -20,6 +20,7 @@ export class RealtimeAgentClient {
   private sessionId: string;
   private isAudioMode: boolean = false;
   private isSpeaking: boolean = false;
+  private permissionContextFn?: () => string;
 
   // Audio
   private audioPlayerNode: any | null = null;
@@ -32,13 +33,19 @@ export class RealtimeAgentClient {
 
   private handlers: AgentEventHandlers;
 
-  constructor(handlers: AgentEventHandlers = {}) {
+  constructor(handlers: AgentEventHandlers = {}, permissionContextFn?: () => string) {
     this.handlers = handlers;
+    this.permissionContextFn = permissionContextFn;
     this.sessionId = Math.random().toString(36).substring(2);
   }
 
   get connected(): boolean {
     return !!this.websocket && this.websocket.readyState === WebSocket.OPEN;
+  }
+
+  // Method to update permission context function
+  setPermissionContext(fn: () => string) {
+    this.permissionContextFn = fn;
   }
 
   async connect(isAudio: boolean = false) {
@@ -76,7 +83,15 @@ export class RealtimeAgentClient {
 
   sendText(message: string, agentId?: string) {
     if (!this.connected) return;
-    const payload: any = { mime_type: 'text/plain', data: message };
+    
+    // Prepend permission context if available
+    let finalMessage = message;
+    if (this.permissionContextFn) {
+      const permissionContext = this.permissionContextFn();
+      finalMessage = `${permissionContext}\n\nUser message: ${message}`;
+    }
+    
+    const payload: any = { mime_type: 'text/plain', data: finalMessage };
     if (agentId) payload.agent_id = agentId;
     this.websocket!.send(JSON.stringify(payload));
   }

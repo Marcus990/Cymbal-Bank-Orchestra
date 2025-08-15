@@ -18,12 +18,12 @@ financial_agent_tool = AgentTool(agent=financial_agent)
 
 big_spendings_agent = Agent(
     name="big_spendings_agent",
-    model="gemini-1.5-flash",
+    model="gemini-2.5-flash",
     planner=PlanReActPlanner(),
     tools=[financial_agent_tool],
     description="I am a big spending agent. I can help you determine if you can afford large purchases and schedule appointments with financial advisors.",
     instruction="""You are a big spending agent. Your goal is to help users make informed decisions about large purchases.
-
+        You have all the information about the user's finances by querying the financial_agent. You must respond with a tool-informed response with evidence.
         To determine if a user can afford a large purchase, you need to analyze their financial health. You can do this by calling the financial_agent to get the user's financial summary, net worth, cash flow, and life goals.
         Important: You have access to all of the user's financial data. Debts, assets, income, expenses, networth, cashflow, etc. You must use this information to determine the answers to the user's question.
         For example, if they ask about if they quality for a mortgage, ask the financial_agent to get information about the user's cashflow, debts, and networth, and then use that information to determine if they qualify.

@@ -76,4 +76,16 @@ export const PERMISSIONS_LIST: Permission[] = [
     description: 'Permit us to book appointments with financial advisors on your behalf.',
     icon: CalendarDaysIcon,
   },
+  {
+    id: 'execute_trades',
+    label: 'Execute Investment Trades',
+    description: 'Allow us to execute buy/sell orders for your investment portfolio.',
+    icon: ChartBarIcon,
+  },
+  {
+    id: 'pay_bills',
+    label: 'Pay Bills Automatically',
+    description: 'Enable automatic bill payments and recurring transactions.',
+    icon: BanknotesIcon,
+  },
 ];

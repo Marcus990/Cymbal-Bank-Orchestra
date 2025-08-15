@@ -40,15 +40,18 @@ def setup_oauth():
     print(f"Found credentials.json. Setting up OAuth flow...")
 
     try:
-        # Run the OAuth flow
+        # Run the OAuth flow with offline access
         flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_PATH, SCOPES)
-        creds = flow.run_local_server(port=8080)
+        # Request offline access to get refresh token
+        flow.redirect_uri = "http://localhost:8080"
+        creds = flow.run_local_server(port=8080, access_type='offline', prompt='consent')
 
         # Save the credentials for the next run
         TOKEN_PATH.parent.mkdir(parents=True, exist_ok=True)
         TOKEN_PATH.write_text(creds.to_json())
 
         print(f"\nSuccessfully saved credentials to {TOKEN_PATH}")
+        print("Note: Refresh token obtained for offline access")
 
         # Test the API connection
         print("\nTesting connection to Google Calendar API...")
