@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Header } from '../components/Header';
 import ViolinIcon from '../assets/violin_icon_final.png';
 import TrumpetIcon from '../assets/trumpet_icon.png';
 import FluteIcon from '../assets/flute_icon.png';
@@ -315,11 +314,9 @@ This shows your current financial status.`;
 
   return (
     <div className="min-h-screen flex flex-col text-cymbal-text-primary" style={{ backgroundColor: '#000' }}>
-      <Header />
-
       {/* Stage background and instruments */}
       <div
-        className="flex-1 relative flex flex-col min-h-0"
+        className="flex-1 relative flex flex-col min-h-0 pt-16"
         style={{
           backgroundImage: `url(${StageBg})`,
           backgroundSize: 'cover',
@@ -327,33 +324,28 @@ This shows your current financial status.`;
           backgroundPosition: 'center bottom',
         }}
       >
-        <div className="text-center pt-16 sm:pt-24">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-300 sm:text-4xl">Meet your Orchestra</h2>
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-200 to-slate-400 mt-2">
+        <div className="text-center pt-8 sm:pt-12 md:pt-16 lg:pt-24 px-4 sm:px-6">
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-slate-300">Meet your Orchestra</h2>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-200 to-slate-400 mt-2">
             The Rhythm of your Wallet
           </h1>
-          {userName && (
-            <p className="mt-4 text-xl text-cymbal-text-secondary">
-              Welcome back, {userName}! 🎵
-            </p>
-          )}
         </div>
         
         {/* Instruments positioned with proper spacing */}
-        <div className="flex-1 flex items-end justify-center pb-16 sm:pb-20 md:pb-24">
-          <div className="flex items-end justify-center gap-8 md:gap-10 flex-nowrap">
+        <div className="flex-1 flex items-end justify-center pb-8 sm:pb-12 md:pb-16 lg:pb-24 px-4 sm:px-6 mt-8 sm:mt-12">
+          <div className="flex items-end justify-center gap-4 sm:gap-6 md:gap-8 lg:gap-10 flex-wrap sm:flex-nowrap">
             {AGENTS.map((agent) => (
-              <div key={agent.id} className="relative group flex flex-col items-center cursor-pointer" onClick={() => handleSelectAgent(agent)}>
-                <div className={`relative h-32 w-32 sm:h-36 sm:w-36 md:h-40 md:w-40 rounded-full overflow-hidden bg-black/70 border-2 shadow-xl transition-all ${selectedAgentId === agent.id ? 'border-cymbal-accent' : 'border-cymbal-border'}`}>
-                  <img src={agent.icon} alt={agent.instrument} className="h-full w-full object-contain p-4" />
+              <div key={agent.id} className="relative group flex flex-col items-center cursor-pointer mb-4 sm:mb-0" onClick={() => handleSelectAgent(agent)}>
+                <div className={`relative h-24 w-24 sm:h-28 sm:w-28 md:h-32 md:w-32 lg:h-36 lg:w-36 xl:h-40 xl:w-40 rounded-full overflow-hidden bg-black/70 border-2 shadow-xl transition-all ${selectedAgentId === agent.id ? 'border-cymbal-accent' : 'border-cymbal-border'}`}>
+                  <img src={agent.icon} alt={agent.instrument} className="h-full w-full object-contain p-3 sm:p-4" />
                   {/* spotlight */}
                   <div className={`pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${isSpeaking ? '!opacity-100' : ''}`}>
                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 h-40 w-40 rounded-full blur-2xl" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.1) 60%, rgba(255,255,255,0) 70%)' }} />
                   </div>
                 </div>
-                <div className="mt-4 p-3 bg-slate-900/60 border border-cymbal-border rounded-lg text-center w-48">
-                  <p className="font-bold text-lg text-cymbal-text-primary truncate">{agent.instrument}</p>
-                  <p className="text-sm text-cymbal-text-secondary">{agent.name}, your {agent.role}</p>
+                <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-slate-900/60 border border-cymbal-border rounded-lg text-center w-32 sm:w-40 md:w-48">
+                  <p className="font-bold text-sm sm:text-base md:text-lg text-cymbal-text-primary truncate">{agent.instrument}</p>
+                  <p className="text-xs sm:text-sm text-cymbal-text-secondary">{agent.name}, your {agent.role}</p>
                 </div>
               </div>
             ))}
@@ -363,10 +355,10 @@ This shows your current financial status.`;
 
       {/* Bottom panel: transcripts toggle + input + JSON table */}
       <div className="w-full border-t border-cymbal-border bg-black/80">
-        <div className="max-w-7xl mx-auto px-3 py-3">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
             {/* Left side: Transcripts and input */}
-            <div className="lg:col-span-2 space-y-3">
+            <div className="xl:col-span-2 space-y-3">
               <button
                 onClick={() => setIsTranscriptOpen((v) => !v)}
                 className="w-full flex items-center justify-between rounded-lg bg-slate-900/70 hover:bg-slate-900 transition-colors px-4 py-3 border border-cymbal-border"
@@ -414,9 +406,9 @@ This shows your current financial status.`;
                 </div>
               )}
 
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                 <input
-                  className="flex-1 rounded-lg bg-slate-900 text-cymbal-text-primary placeholder-slate-400 px-4 py-3 outline-none focus:ring-2 focus:ring-cymbal-accent border border-cymbal-border"
+                  className="flex-1 rounded-lg bg-slate-900 text-cymbal-text-primary placeholder-slate-400 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base outline-none focus:ring-2 focus:ring-cymbal-accent border border-cymbal-border"
                   placeholder="Type a message..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
@@ -425,55 +417,57 @@ This shows your current financial status.`;
                   }}
                   disabled={isRecording}
                 />
-                <button
-                  onClick={toggleRecording}
-                  aria-label="Voice input"
-                  className={`rounded-lg border border-cymbal-border bg-slate-900 hover:bg-slate-800 text-cymbal-text-primary px-3 py-3 transition-colors ${isRecording ? 'animate-pulse' : ''}`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="h-5 w-5"
-                  >
-                    <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z" />
-                    <path d="M19 11a1 1 0 1 0-2 0 5 5 0 1 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V21H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-3.08A7 7 0 0 0 19 11Z" />
-                  </svg>
-                </button>
-                {isRecording ? (
+                <div className="flex items-center space-x-2">
                   <button
                     onClick={toggleRecording}
-                    className="rounded-lg bg-red-600 text-white font-semibold px-5 py-3 hover:bg-red-700 transition-colors"
+                    aria-label="Voice input"
+                    className={`rounded-lg border border-cymbal-border bg-slate-900 hover:bg-slate-800 text-cymbal-text-primary px-2 sm:px-3 py-2 sm:py-3 transition-colors ${isRecording ? 'animate-pulse' : ''}`}
                   >
-                    Stop
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="h-4 w-4 sm:h-5 sm:w-5"
+                    >
+                      <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z" />
+                      <path d="M19 11a1 1 0 1 0-2 0 5 5 0 1 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V21H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-3.08A7 7 0 0 0 19 11Z" />
+                    </svg>
                   </button>
-                ) : (
-                  <button
-                    onClick={handleSendMessage}
-                    className="rounded-lg bg-cymbal-accent text-cymbal-deep-dark font-semibold px-5 py-3 hover:bg-cymbal-accent-hover transition-colors"
-                  >
-                    {connected ? 'Send' : 'Connecting...'}
-                  </button>
-                )}
+                  {isRecording ? (
+                    <button
+                      onClick={toggleRecording}
+                      className="rounded-lg bg-red-600 text-white font-semibold px-3 sm:px-5 py-2 sm:py-3 text-sm sm:text-base hover:bg-red-700 transition-colors"
+                    >
+                      Stop
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSendMessage}
+                      className="rounded-lg bg-cymbal-accent text-cymbal-deep-dark font-semibold px-3 sm:px-5 py-2 sm:py-3 text-sm sm:text-base hover:bg-cymbal-accent-hover transition-colors"
+                    >
+                      {connected ? 'Send' : 'Connecting...'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Right side: JSON Data Table */}
-            <div className="lg:col-span-1">
-              <div className="bg-slate-900/70 border border-cymbal-border rounded-lg p-4 h-full">
+            <div className="xl:col-span-1">
+              <div className="bg-slate-900/70 border border-cymbal-border rounded-lg p-3 sm:p-4 h-full">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-cymbal-text-primary">Structured Data</h3>
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={testJsonDetection}
-                      className="text-xs text-cymbal-accent hover:text-cymbal-accent-hover transition-colors"
+                      className="text-xs sm:text-sm text-cymbal-accent hover:text-cymbal-accent-hover transition-colors px-2 py-1 rounded"
                     >
                       Test JSON
                     </button>
                     {jsonData.length > 0 && (
                       <button
                         onClick={clearAllJsonData}
-                        className="text-xs text-cymbal-text-secondary hover:text-cymbal-text-primary transition-colors"
+                        className="text-xs sm:text-sm text-cymbal-text-secondary hover:text-cymbal-text-primary transition-colors px-2 py-1 rounded"
                       >
                         Clear All
                       </button>
@@ -482,9 +476,9 @@ This shows your current financial status.`;
                 </div>
                 
                 {jsonData.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="text-cymbal-text-secondary text-sm">
-                      <svg className="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="text-center py-6 sm:py-8">
+                    <div className="text-cymbal-text-secondary text-xs sm:text-sm">
+                      <svg className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                       <p>No structured data detected yet</p>
@@ -492,16 +486,16 @@ This shows your current financial status.`;
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4 max-h-[400px] overflow-y-auto">
+                  <div className="space-y-3 sm:space-y-4 max-h-[300px] sm:max-h-[400px] overflow-y-auto">
                     {jsonData.map((item) => (
-                      <div key={item.id} className="bg-slate-800/50 border border-cymbal-border rounded-lg p-3">
+                      <div key={item.id} className="bg-slate-800/50 border border-cymbal-border rounded-lg p-2 sm:p-3">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs text-cymbal-text-secondary">
                             {item.timestamp.toLocaleTimeString()}
                           </span>
                           <button
                             onClick={() => removeJsonEntry(item.id)}
-                            className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                            className="text-xs text-red-400 hover:text-red-300 transition-colors p-1 rounded hover:bg-red-400/10"
                           >
                             ×
                           </button>

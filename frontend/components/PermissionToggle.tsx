@@ -12,17 +12,18 @@ export const PermissionToggle: React.FC<PermissionToggleProps> = ({ permission, 
   const { id, label, description, icon: Icon } = permission;
 
   return (
-    <div className="flex items-center justify-between p-6 hover:bg-slate-800/50 transition-colors duration-200 cursor-pointer" onClick={() => onToggle(id)}>
-      <div className="flex items-start space-x-4">
+    <div className="flex items-start justify-between p-4 sm:p-6 hover:bg-slate-800/50 transition-colors duration-200 cursor-pointer" onClick={() => onToggle(id)}>
+      <div className="flex items-start space-x-3 sm:space-x-4 flex-1 min-w-0">
         <div className="flex-shrink-0 mt-1">
-          <Icon className="w-6 h-6 text-cymbal-accent" />
+          <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-cymbal-accent" />
         </div>
-        <div>
-          <h3 className="font-semibold text-cymbal-text-primary">{label}</h3>
-          <p className="text-sm text-cymbal-text-secondary">{description}</p>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-cymbal-text-primary text-sm sm:text-base leading-tight">{label}</h3>
+          <p className="text-xs sm:text-sm text-cymbal-text-secondary mt-1 leading-relaxed hidden xs:block">{description}</p>
+          <p className="text-xs text-cymbal-text-secondary mt-1 leading-relaxed xs:hidden">{description.length > 60 ? description.substring(0, 60) + '...' : description}</p>
         </div>
       </div>
-      <div className="flex-shrink-0 ml-6">
+      <div className="flex-shrink-0 ml-3 sm:ml-6">
         <button
           type="button"
           role="switch"

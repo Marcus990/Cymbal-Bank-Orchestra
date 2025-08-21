@@ -1,0 +1,109 @@
+/* Global styles for Cymbal Bank frontend */
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Add top padding to account for fixed navigation */
+body {
+  padding-top: 0;
+}
+
+/* Ensure content flows properly with fixed navigation */
+#root {
+  padding-top: 0;
+}
+
+/* Navigation bar height calculations */
+.nav-desktop {
+  height: 4rem; /* 64px - h-16 */
+}
+
+.nav-mobile {
+  height: 2.5rem; /* 40px - py-2 + content */
+}
+
+/* Ensure proper spacing below fixed navigation */
+.page-content {
+  padding-top: calc(4rem + 2.5rem); /* Desktop nav + Mobile nav */
+}
+
+@media (min-width: 640px) {
+  .page-content {
+    padding-top: 4rem; /* Only desktop nav on larger screens */
+  }
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Ensure proper text wrapping on small screens */
+.transcript-markdown {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Improve touch targets on mobile */
+@media (max-width: 640px) {
+  button, input, select, textarea {
+    min-height: 44px;
+  }
+}
+
+/* Smooth scrolling for better mobile experience */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for better mobile experience */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(55, 65, 81, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.5);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.7);
+}
+
+/* Ensure proper focus states for accessibility */
+button:focus, input:focus, select:focus, textarea:focus {
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
+}
+
+/* Improve mobile tap highlights */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure proper spacing on very small screens */
+@media (max-width: 375px) {
+  .px-4 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  .py-3 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
