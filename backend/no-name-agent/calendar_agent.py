@@ -17,7 +17,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 # Define the scopes for Google Calendar API
-SCOPES = ["https.googleapis.com/auth/calendar"]
+SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 # Path for token storage
 TOKEN_PATH = Path(os.path.expanduser("~/.credentials/calendar_token.json"))

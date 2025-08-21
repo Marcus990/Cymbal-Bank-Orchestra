@@ -95,7 +95,7 @@ const OnboardingPage: React.FC = () => {
 
           <div className="bg-cymbal-dark/50 backdrop-blur-sm border border-cymbal-border rounded-xl shadow-2xl shadow-slate-950/50">
             <div className="p-4 sm:p-6 border-b border-cymbal-border flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
-                <h2 className="font-semibold text-base sm:text-lg text-cymbal-text-primary">Co-pilot Permissions</h2>
+                <h2 className="font-semibold text-base sm:text-lg text-cymbal-text-primary">Orchestra Permissions</h2>
                 <div className="flex items-center justify-center sm:justify-end space-x-3 sm:space-x-4">
                     <button onClick={handleSelectAll} className="text-xs sm:text-sm font-medium text-cymbal-accent hover:text-cymbal-accent-hover transition-colors px-3 py-1 rounded">Enable All</button>
                     <button onClick={handleDeselectAll} className="text-xs sm:text-sm font-medium text-cymbal-text-secondary hover:text-cymbal-text-primary transition-colors px-3 py-1 rounded">Disable All</button>

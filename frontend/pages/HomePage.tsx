@@ -56,92 +56,158 @@ export const HomePage: React.FC = () => {
     { text: 'Welcome to Cymbal Bank! Select an agent to talk to, or start typing to talk to our router agent.', sender: 'agent' }
   ]);
   const [isTranscriptOpen, setIsTranscriptOpen] = useState(false);
+  const [transcriptHeight, setTranscriptHeight] = useState(72); // Default height in rem (4.5rem)
+  const [isResizing, setIsResizing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [connected, setConnected] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [jsonData, setJsonData] = useState<JsonData[]>([]);
+  const [lastMessage, setLastMessage] = useState<string>('');
   const agentRef = useRef<import('../lib/wsAgent').RealtimeAgentClient | null>(null);
   const { getPermissionContext, userName } = usePermissions();
-
-  // Function to test JSON detection
-  const testJsonDetection = () => {
-    const testText = `Here's your account summary:
-
-\`\`\`json
-{
-  "account_balance": 12500.75,
-  "currency": "USD",
-  "transactions": [
-    {"id": 1, "amount": -45.99, "description": "Coffee Shop"},
-    {"id": 2, "amount": 2500.00, "description": "Salary Deposit"}
-  ]
-}
-\`\`\`
-
-This shows your current financial status.`;
-    
-    console.log('🧪 Testing JSON detection with:', testText);
-    const detected = detectAndExtractJson(testText);
-    console.log('🧪 Detection result:', detected);
-    
-    if (detected.length > 0) {
-      const newJsonData: JsonData = {
-        id: `test-${Date.now()}`,
-        data: detected[0],
-        timestamp: new Date()
-      };
-      setJsonData(prev => [...prev, newJsonData]);
-      console.log('🧪 Test JSON added to table');
-    }
-  };
+  const transcriptRef = useRef<HTMLDivElement>(null);
 
   // Function to detect and extract JSON from text
   const detectAndExtractJson = (text: string): any[] => {
     console.log('🔍 JSON Detection - Received text:', text);
     const jsonMatches: any[] = [];
     
-    // Simple regex to detect JSON objects with curly braces
-    // Look for content between { and } that might be JSON
-    const jsonPattern = /\{[^}]*\}/g;
+    // First, try to extract JSON from markdown code blocks
+    // This handles cases where the agent sends complete markdown blocks
+    const codeBlockPattern = /```(?:json)?\s*([\s\S]*?)```/g;
+    let codeBlockMatch;
     
-    const matches = text.match(jsonPattern);
-    if (matches) {
-      console.log('📋 Found potential JSON matches:', matches);
-      matches.forEach(match => {
-        try {
-          // Clean up the match
-          let cleanMatch = match.trim();
-          
-          // Remove markdown code blocks if present
-          if (cleanMatch.startsWith('```json')) {
-            cleanMatch = cleanMatch.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-          } else if (cleanMatch.startsWith('```')) {
-            cleanMatch = cleanMatch.replace(/^```\s*/, '').replace(/\s*```$/, '');
-          }
-          
-          // Remove any leading/trailing whitespace
-          cleanMatch = cleanMatch.replace(/^\s+|\s+$/g, '');
-          
-          console.log('🧹 Cleaned match:', cleanMatch);
-          
-          const parsed = JSON.parse(cleanMatch);
-          console.log('✅ Successfully parsed JSON:', parsed);
-          
-          // Only add if it's a meaningful object
-          if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
-            jsonMatches.push(parsed);
-            console.log('📊 Added object to matches');
-          }
-        } catch (e) {
-          // Not valid JSON, skip
-          console.debug('❌ Failed to parse JSON:', match, e);
+    while ((codeBlockMatch = codeBlockPattern.exec(text)) !== null) {
+      const codeContent = codeBlockMatch[1].trim();
+      console.log('📋 Found code block content:', codeContent);
+      
+      try {
+        const parsed = JSON.parse(codeContent);
+        console.log('✅ Successfully parsed JSON from code block:', parsed);
+        console.log('📊 Parsed JSON type:', typeof parsed);
+        console.log('📊 Parsed JSON keys:', Object.keys(parsed));
+        
+        // Only add if it's a meaningful object or array
+        if (parsed && typeof parsed === 'object' && 
+            (Array.isArray(parsed) ? parsed.length > 0 : Object.keys(parsed).length > 0)) {
+          jsonMatches.push(parsed);
+          console.log('📊 Added object/array from code block to matches');
         }
-      });
+      } catch (e) {
+        console.debug('❌ Failed to parse JSON from code block:', codeContent, e);
+      }
+    }
+    
+    // If no code blocks found, try to detect JSON that might be building up
+    // This handles cases where the agent sends markdown in pieces
+    if (jsonMatches.length === 0) {
+      console.log('🔍 No complete code blocks found, checking for partial JSON...');
+      
+      // Look for content that starts with ```json and might be incomplete
+      if (text.includes('```json') || text.includes('```')) {
+        // Try to extract content after ```json or ```
+        const partialPattern = /```(?:json)?\s*([\s\S]*)/;
+        const partialMatch = text.match(partialPattern);
+        
+        if (partialMatch) {
+          const partialContent = partialMatch[1].trim();
+          console.log('📋 Found partial content:', partialContent);
+          
+          // Try to parse as JSON (might work if the closing ``` hasn't arrived yet)
+          try {
+            const parsed = JSON.parse(partialContent);
+            console.log('✅ Successfully parsed partial JSON:', parsed);
+            
+            if (parsed && typeof parsed === 'object' && 
+                (Array.isArray(parsed) ? parsed.length > 0 : Object.keys(parsed).length > 0)) {
+              jsonMatches.push(parsed);
+              console.log('📊 Added partial JSON to matches');
+            }
+          } catch (e) {
+            console.debug('❌ Failed to parse partial JSON:', partialContent, e);
+          }
+        }
+      }
+    }
+    
+    // If still no matches, fall back to regex pattern matching
+    if (jsonMatches.length === 0) {
+      console.log('🔍 No code blocks or partial JSON found, trying regex pattern matching...');
+      
+      // Enhanced regex to detect both JSON arrays and objects
+      // Look for content between [ and ] or { and } that might be JSON
+      const jsonPattern = /(\[[^\]]*\]|\{[^}]*\})/g;
+      
+      const matches = text.match(jsonPattern);
+      if (matches) {
+        console.log('📋 Found potential JSON matches with regex:', matches);
+        matches.forEach(match => {
+          try {
+            // Clean up the match
+            let cleanMatch = match.trim();
+            
+            // Remove any leading/trailing whitespace
+            cleanMatch = cleanMatch.replace(/^\s+|\s+$/g, '');
+            
+            console.log('🧹 Cleaned match:', cleanMatch);
+            
+            const parsed = JSON.parse(cleanMatch);
+            console.log('✅ Successfully parsed JSON with regex:', parsed);
+            
+            // Only add if it's a meaningful object or array
+            if (parsed && typeof parsed === 'object' && 
+                (Array.isArray(parsed) ? parsed.length > 0 : Object.keys(parsed).length > 0)) {
+              jsonMatches.push(parsed);
+              console.log('📊 Added object/array from regex to matches');
+            }
+          } catch (e) {
+            // Not valid JSON, skip
+            console.debug('❌ Failed to parse JSON with regex:', match, e);
+          }
+        });
+      }
     }
     
     console.log('🎯 Final JSON matches:', jsonMatches);
+    console.log('🎯 Number of final matches:', jsonMatches.length);
+    jsonMatches.forEach((match, index) => {
+      console.log(`🎯 Match ${index + 1}:`, match);
+      if (match.transactions) {
+        console.log(`🎯 Match ${index + 1} has ${match.transactions.length} transactions`);
+      }
+    });
     return jsonMatches;
+  };
+
+  // Function to check if JSON data is a duplicate
+  const isDuplicateJson = (newData: any, existingData: JsonData[]): boolean => {
+    return existingData.some(existing => {
+      try {
+        // For nested structures like {transactions: [...]}, compare the actual content
+        if (newData.transactions && existing.data.transactions) {
+          // If both have transactions arrays, compare the transaction IDs or content
+          const newTransactions = newData.transactions;
+          const existingTransactions = existing.data.transactions;
+          
+          if (newTransactions.length === existingTransactions.length) {
+            // Compare each transaction by ID if available, otherwise by content
+            return newTransactions.every((newTx: any, index: number) => {
+              const existingTx = existingTransactions[index];
+              if (newTx.transaction_id && existingTx.transaction_id) {
+                return newTx.transaction_id === existingTx.transaction_id;
+              }
+              return JSON.stringify(newTx) === JSON.stringify(existingTx);
+            });
+          }
+        }
+        
+        // For other structures, compare the actual data content
+        return JSON.stringify(existing.data) === JSON.stringify(newData);
+      } catch (e) {
+        return false;
+      }
+    });
   };
 
   // Function to remove a specific JSON entry
@@ -158,6 +224,42 @@ This shows your current financial status.`;
   const renderJsonTable = (data: any): React.JSX.Element => {
     try {
       if (Array.isArray(data)) {
+        // If it's an array of objects (like transactions), render as a proper table
+        if (data.length > 0 && typeof data[0] === 'object' && data[0] !== null) {
+          const keys = Object.keys(data[0]);
+          return (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-cymbal-border">
+                    {keys.map((key) => (
+                      <th key={key} className="text-left py-2 px-3 text-cymbal-text-primary font-semibold">
+                        {key}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.map((item, index) => (
+                    <tr key={index} className="border-b border-cymbal-border/30 hover:bg-slate-800/50">
+                      {keys.map((key) => (
+                        <td key={key} className="py-2 px-3 text-cymbal-text-primary">
+                          {typeof item[key] === 'object' && item[key] !== null ? (
+                            <pre className="text-xs overflow-x-auto whitespace-pre-wrap">{JSON.stringify(item[key], null, 2)}</pre>
+                          ) : (
+                            String(item[key])
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+        
+        // Fallback for simple arrays
         return (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
@@ -225,8 +327,76 @@ This shows your current financial status.`;
     }
   };
 
+  // Function to manually process the last message for JSON
+  const processLastMessageForJson = () => {
+    if (!lastMessage.trim()) return;
+    
+    console.log('🔧 Manual JSON processing triggered for last message:', lastMessage);
+    const detectedJson = detectAndExtractJson(lastMessage);
+    
+    if (detectedJson.length > 0) {
+      console.log('🎉 JSON detected in manual processing! Adding to table:', detectedJson);
+      
+      detectedJson.forEach((jsonData, index) => {
+        setJsonData(prevData => {
+          const isDuplicate = isDuplicateJson(jsonData, prevData);
+          if (!isDuplicate) {
+            const newJsonData: JsonData = {
+              id: `json-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              data: jsonData,
+              timestamp: new Date()
+            };
+            console.log('📊 Manually added JSON data to table');
+            return [...prevData, newJsonData];
+          } else {
+            console.log('🚫 Duplicate JSON detected in manual processing');
+            return prevData;
+          }
+        });
+      });
+      
+      // Clear last message after processing
+      setLastMessage('');
+      console.log('🔧 Manual processing completed, cleared last message');
+    } else {
+      console.log('❌ No JSON detected in last message during manual processing');
+    }
+  };
+
+  // Handle transcript resizing
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing || !transcriptRef.current) return;
+      
+      const rect = transcriptRef.current.getBoundingClientRect();
+      const newHeight = Math.max(72, Math.min(400, e.clientY - rect.top)); // Min 4.5rem, max 25rem
+      setTranscriptHeight(newHeight);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
+
   useEffect(() => {
     let mounted = true;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     const init = async () => {
       const { RealtimeAgentClient } = await import('../lib/wsAgent');
       if (!mounted) return;
@@ -236,19 +406,8 @@ This shows your current financial status.`;
         onText: (text) => {
           console.log('📨 Received text from agent:', text);
           
-          // Check for JSON in the agent response
-          const detectedJson = detectAndExtractJson(text);
-          if (detectedJson.length > 0) {
-            console.log('🎉 JSON detected! Adding to table:', detectedJson);
-            const newJsonData: JsonData = {
-              id: `json-${Date.now()}`,
-              data: detectedJson[0], // Take the first JSON match
-              timestamp: new Date()
-            };
-            setJsonData(prev => [...prev, newJsonData]);
-          } else {
-            console.log('❌ No JSON detected in text');
-          }
+          // Store the last message for manual JSON processing
+          setLastMessage(prev => prev + text);
           
           setChatHistory((prev) => {
             // If last is agent, append; else add new agent message
@@ -260,7 +419,50 @@ This shows your current financial status.`;
             return [...prev, { text, sender: 'agent' }];
           });
         },
-        onTurnComplete: () => {},
+        onTurnComplete: () => {
+          console.log('🔄 Turn complete callback fired');
+          
+          // Process the last message for JSON once the turn is complete
+          if (lastMessage.trim()) {
+            console.log('🔄 Turn complete, processing last message for JSON:', lastMessage);
+            
+            // Check for JSON in the last message
+            const detectedJson = detectAndExtractJson(lastMessage);
+            if (detectedJson.length > 0) {
+              console.log('🎉 JSON detected after turn complete! Adding to table:', detectedJson);
+              console.log('📊 Number of JSON objects detected:', detectedJson.length);
+              
+              // Check for duplicates before adding
+              detectedJson.forEach((jsonData, index) => {
+                console.log(`🔍 Processing JSON object ${index + 1}:`, jsonData);
+                
+                setJsonData(prevData => {
+                  const isDuplicate = isDuplicateJson(jsonData, prevData);
+                  console.log(`🔍 JSON object ${index + 1} is duplicate:`, isDuplicate);
+                  
+                  if (!isDuplicate) {
+                    const newJsonData: JsonData = {
+                      id: `json-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                      data: jsonData,
+                      timestamp: new Date()
+                    };
+                    console.log('📊 Added new JSON data to table:', newJsonData);
+                    return [...prevData, newJsonData];
+                  } else {
+                    console.log('🚫 Duplicate JSON detected, skipping...');
+                    return prevData;
+                  }
+                });
+              });
+            } else {
+              console.log('❌ No JSON detected in last message');
+            }
+            
+            // Clear last message after processing
+            setLastMessage('');
+            console.log('🔄 Turn complete, cleared last message');
+          }
+        },
         onIsSpeaking: (speaking) => setIsSpeaking(speaking),
         onInterrupted: () => setIsRecording(false),
       }, getPermissionContext);
@@ -270,6 +472,9 @@ This shows your current financial status.`;
     init();
     return () => {
       mounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       agentRef.current?.disconnect();
     };
   }, [getPermissionContext]);
@@ -355,7 +560,7 @@ This shows your current financial status.`;
 
       {/* Bottom panel: transcripts toggle + input + JSON table */}
       <div className="w-full border-t border-cymbal-border bg-black/80">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3">
+        <div className="mx-auto px-3 sm:px-4 lg:px-6 py-6">
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
             {/* Left side: Transcripts and input */}
             <div className="xl:col-span-2 space-y-3">
@@ -380,9 +585,11 @@ This shows your current financial status.`;
               {isTranscriptOpen && (
                 <div
                   id="transcripts-panel"
-                  className="rounded-lg border border-cymbal-border bg-black/70 p-3"
+                  ref={transcriptRef}
+                  className="rounded-lg border border-cymbal-border bg-black/70 p-3 relative"
+                  style={{ height: `${transcriptHeight}px` }}
                 >
-                  <div className="max-h-[4.5rem] overflow-y-auto">
+                  <div className="h-full overflow-y-auto">
                     <ul className="space-y-2 text-sm leading-6">
                       {chatHistory.length === 0 && (
                         <li className="text-sm text-cymbal-text-secondary">No transcripts yet.</li>
@@ -402,6 +609,15 @@ This shows your current financial status.`;
                         </li>
                       ))}
                     </ul>
+                  </div>
+                  
+                  {/* Resize handle */}
+                  <div
+                    className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize group"
+                    onMouseDown={handleResizeStart}
+                    title="Drag to resize transcript height"
+                  >
+                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-cymbal-border rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   </div>
                 </div>
               )}
@@ -456,18 +672,27 @@ This shows your current financial status.`;
             <div className="xl:col-span-1">
               <div className="bg-slate-900/70 border border-cymbal-border rounded-lg p-3 sm:p-4 h-full">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-cymbal-text-primary">Structured Data</h3>
+                  <div>
+                    <h3 className="font-semibold text-cymbal-text-primary">Structured Data</h3>
+                    <div className="text-xs text-cymbal-text-secondary mt-1">
+                      {lastMessage.trim() && ` | Text: ${lastMessage.length} chars`}
+                    </div>
+                  </div>
                   <div className="flex items-center space-x-2">
-                    <button
-                      onClick={testJsonDetection}
-                      className="text-xs sm:text-sm text-cymbal-accent hover:text-cymbal-accent-hover transition-colors px-2 py-1 rounded"
-                    >
-                      Test JSON
-                    </button>
+                    {lastMessage.trim() && (
+                      <button
+                        onClick={processLastMessageForJson}
+                        className="text-xs sm:text-sm text-cymbal-accent hover:text-cymbal-accent-hover transition-colors px-2 py-1 rounded border border-cymbal-accent/30 hover:border-cymbal-accent/50"
+                        title="Manually process accumulated text for JSON"
+                      >
+                        Process JSON
+                      </button>
+                    )}
                     {jsonData.length > 0 && (
                       <button
                         onClick={clearAllJsonData}
-                        className="text-xs sm:text-sm text-cymbal-text-secondary hover:text-cymbal-text-primary transition-colors px-2 py-1 rounded"
+                        className="text-xs sm:text-sm text-red-400 hover:text-red-300 transition-colors px-2 py-1 rounded border border-red-400/30 hover:border-red-400/50 hover:bg-red-400/10"
+                        title="Clear all structured data"
                       >
                         Clear All
                       </button>
@@ -496,6 +721,7 @@ This shows your current financial status.`;
                           <button
                             onClick={() => removeJsonEntry(item.id)}
                             className="text-xs text-red-400 hover:text-red-300 transition-colors p-1 rounded hover:bg-red-400/10"
+                            title="Remove this data entry"
                           >
                             ×
                           </button>

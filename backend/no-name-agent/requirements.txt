@@ -7,3 +7,4 @@ gunicorn
 google-adk
 spotipy
 stripe
+google-oauth-lib
