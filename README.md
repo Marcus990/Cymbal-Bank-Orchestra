@@ -1,6 +1,7 @@
 # Cymbal Bank Orchestra
 
 Official Episode: https://youtu.be/0CQxF56MKWo?si=tePVNHQAXcv9RAvZ
+Excalidraw Link: https://excalidraw.com/#room=9c8106e276ad8dc6ae97,zFeWLgE09u4YL8MWHNox7A
 
 As a user of Cymbal Bank's financial services platform, you should have full control of your money. You should have full confidence in our platform's reliability while still having a great user experience with ease-of-use. 
 
@@ -14,9 +15,6 @@ This project is a demonstration of agentic AI architecture for financial service
 - **Real-time Communication**: WebSocket-based streaming interface with text and audio support
 - **Comprehensive Banking Features**: Account management, transaction tracking, goal setting, calendar scheduling, and financial insights
 - **Modern UI**: React-based frontend with real-time updates and interactive visualizations
-
-## Excalidraw Link
-https://excalidraw.com/#room=9c8106e276ad8dc6ae97,zFeWLgE09u4YL8MWHNox7A
 
 ## 🏗️ Architecture
 
