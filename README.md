@@ -1,5 +1,7 @@
 # Cymbal Bank Orchestra
 
+Official Episode: https://youtu.be/0CQxF56MKWo?si=tePVNHQAXcv9RAvZ
+
 As a user of Cymbal Bank's financial services platform, you should have full control of your money. You should have full confidence in our platform's reliability while still having a great user experience with ease-of-use. 
 
 We present the Cymbal Bank Orchestra Platform, an intelligent financial services platform built with Google's Agent Development Kit (ADK), A2A Protocol, and Gemini models. This multi-agent system provides comprehensive banking assistance through specialized AI agents for daily spending, investments, financial planning, and more. The user has full control over the agents (instruments) that interact with their bank account as the composer of their orchestra.
