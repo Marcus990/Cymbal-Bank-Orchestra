@@ -1,4 +1,4 @@
-# Cymbal Bank Orchestra
+# 🏦 Cymbal Bank Orchestra
 
 Official Episode: https://youtu.be/0CQxF56MKWo?si=tePVNHQAXcv9RAvZ
 
