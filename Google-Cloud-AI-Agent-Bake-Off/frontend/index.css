@@ -1,0 +1,107 @@
+/* Global styles for Cymbal Bank frontend */
+html, body, #root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Markdown styles for transcript view */
+.transcript-markdown p {
+  margin: 0.25em 0;
+  line-height: 1.4;
+}
+
+.transcript-markdown h1,
+.transcript-markdown h2,
+.transcript-markdown h3,
+.transcript-markdown h4,
+.transcript-markdown h5,
+.transcript-markdown h6 {
+  margin: 0.5em 0 0.25em 0;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.transcript-markdown h1 { font-size: 1.1em; }
+.transcript-markdown h2 { font-size: 1em; }
+.transcript-markdown h3 { font-size: 0.95em; }
+
+.transcript-markdown ul,
+.transcript-markdown ol {
+  margin: 0.25em 0;
+  padding-left: 1.25em;
+}
+
+.transcript-markdown li {
+  margin: 0.125em 0;
+}
+
+.transcript-markdown code {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 0.1em 0.2em;
+  border-radius: 0.2em;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.85em;
+}
+
+.transcript-markdown pre {
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 0.5em;
+  border-radius: 0.4em;
+  overflow-x: auto;
+  margin: 0.5em 0;
+  font-size: 0.85em;
+}
+
+.transcript-markdown pre code {
+  background: none;
+  padding: 0;
+}
+
+.transcript-markdown blockquote {
+  border-left: 2px solid #6366f1;
+  margin: 0.5em 0;
+  padding-left: 0.75em;
+  font-style: italic;
+  color: #94a3b8;
+  font-size: 0.9em;
+}
+
+.transcript-markdown strong {
+  font-weight: 600;
+}
+
+.transcript-markdown em {
+  font-style: italic;
+}
+
+.transcript-markdown a {
+  color: #6366f1;
+  text-decoration: underline;
+}
+
+.transcript-markdown a:hover {
+  color: #4f46e5;
+}
+
+.transcript-markdown table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5em 0;
+  font-size: 0.85em;
+}
+
+.transcript-markdown th,
+.transcript-markdown td {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.25em 0.5em;
+  text-align: left;
+}
+
+.transcript-markdown th {
+  background-color: rgba(255, 255, 255, 0.1);
+  font-weight: 600;
+}
