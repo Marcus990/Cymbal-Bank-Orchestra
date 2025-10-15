@@ -7,6 +7,9 @@ import StageBg from '../assets/stage.png';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { usePermissions } from '../contexts/PermissionsContext';
+import { SpeechToText } from '../components/SpeechToText';
+import { FollowerPointerCard } from '../components/FollowingPointer';
+import { TransactionHistoryChart } from '../components/TransactionHistoryChart';
 
 interface Message {
   text: string;
@@ -17,6 +20,15 @@ interface JsonData {
   id: string;
   data: any;
   timestamp: Date;
+}
+
+interface Transaction {
+  'Transaction ID': string;
+  'Account ID': string;
+  Amount: string;
+  Category: string;
+  Date: string;
+  Description: string;
 }
 
 const AGENTS = [
@@ -61,9 +73,13 @@ export const HomePage: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [isSpeechToTextActive, setIsSpeechToTextActive] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [jsonData, setJsonData] = useState<JsonData[]>([]);
   const [lastMessage, setLastMessage] = useState<string>('');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [chartType, setChartType] = useState<'line' | 'bar' | 'pie'>('line');
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const agentRef = useRef<import('../lib/wsAgent').RealtimeAgentClient | null>(null);
   const { getPermissionContext, userName } = usePermissions();
   const transcriptRef = useRef<HTMLDivElement>(null);
@@ -220,13 +236,124 @@ export const HomePage: React.FC = () => {
     setJsonData([]);
   };
 
+  // Mock transaction data for testing when backend is not available
+  const getMockTransactionData = (): Transaction[] => {
+    return [
+      {
+        "Transaction ID": "txn_id_011",
+        "Account ID": "acc-jd-c-001",
+        "Amount": "$4000",
+        "Category": "Income",
+        "Date": "2025-08-25",
+        "Description": "Paycheck"
+      },
+      {
+        "Transaction ID": "txn_id_007",
+        "Account ID": "acc-jd-e-002",
+        "Amount": "$800",
+        "Category": "Transfers",
+        "Date": "2025-08-12",
+        "Description": "529 Contribution"
+      },
+      {
+        "Transaction ID": "txn_id_006",
+        "Account ID": "acc-jd-c-001",
+        "Amount": "$4000",
+        "Category": "Income",
+        "Date": "2025-08-10",
+        "Description": "Paycheck"
+      },
+      {
+        "Transaction ID": "txn_id_003",
+        "Account ID": "acc-jd-d-010",
+        "Amount": "-$2500",
+        "Category": "Housing",
+        "Date": "2025-08-01",
+        "Description": "Mortgage Payment"
+      },
+      {
+        "Transaction ID": "txn_id_027",
+        "Account ID": "acc-jd-c-001",
+        "Amount": "$4000",
+        "Category": "Income",
+        "Date": "2025-07-25",
+        "Description": "Paycheck"
+      }
+    ];
+  };
+
+  // Function to fetch transaction history
+  const fetchTransactionHistory = async () => {
+    try {
+      setIsLoadingTransactions(true);
+      console.log('Fetching transaction history...');
+      
+      // Use the actual user ID from onboarding, fallback to user-001 if not available
+      const userId = userName || 'user-001';
+      console.log('Fetching transaction history for user:', userId);
+      console.log('User ID source:', userName ? 'onboarding' : 'fallback (user-001)');
+      console.log('Current userName from context:', userName);
+      console.log('Current permissions context:', getPermissionContext());
+      
+      // Try to fetch from the backend
+      const response = await fetch(`http://localhost:8001/api/transaction-history/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Transaction history loaded successfully:', data);
+        console.log(`📊 Received ${Array.isArray(data) ? data.length : 'unknown'} transactions`);
+        if (Array.isArray(data)) {
+          console.log('📅 Transaction date range:', {
+            first: data[0]?.Date,
+            last: data[data.length - 1]?.Date,
+            total: data.length
+          });
+        }
+        setTransactions(data);
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to fetch transaction history:', response.status, response.statusText);
+        console.error('Error response:', errorText);
+        
+        // Check if it's a CORS or connection issue
+        if (response.status === 0 || response.statusText === 'Failed to fetch') {
+          console.error('This appears to be a CORS or connection issue. Backend might not be running on port 8001.');
+        }
+        
+        // Set empty transactions to show the "no data" state
+        setTransactions([]);
+      }
+    } catch (error) {
+      console.error('Error fetching transaction history:', error);
+      console.log('Using mock data as fallback...');
+      // Use mock data as fallback when backend is not available
+      setTransactions(getMockTransactionData());
+    } finally {
+      setIsLoadingTransactions(false);
+    }
+  };
+
   // Function to render JSON as a table with better error handling
   const renderJsonTable = (data: any): React.JSX.Element => {
     try {
+      console.log('🔍 renderJsonTable called with data:', data);
+      console.log('🔍 Data type:', typeof data);
+      console.log('🔍 Is array:', Array.isArray(data));
+      
       if (Array.isArray(data)) {
+        console.log('🔍 Processing as array with', data.length, 'items');
         // If it's an array of objects (like transactions), render as a proper table
         if (data.length > 0 && typeof data[0] === 'object' && data[0] !== null) {
           const keys = Object.keys(data[0]);
+          console.log('🔍 Array item keys:', keys);
           return (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
@@ -287,7 +414,66 @@ export const HomePage: React.FC = () => {
           </div>
         );
       } else if (typeof data === 'object' && data !== null) {
+        console.log('🔍 Processing as object');
+        // Check if this is a nested structure with arrays (like {"investment_portfolio": [...]})
         const keys = Object.keys(data);
+        console.log('🔍 Object keys:', keys);
+        
+        // Look for arrays that contain objects (like investment data)
+        const arrayKeys = keys.filter(key => 
+          Array.isArray(data[key]) && 
+          data[key].length > 0 && 
+          typeof data[key][0] === 'object'
+        );
+        console.log('🔍 Found array keys:', arrayKeys);
+        
+        if (arrayKeys.length > 0) {
+          // If we found arrays with objects, render the first one as a table
+          const firstArrayKey = arrayKeys[0];
+          const arrayData = data[firstArrayKey];
+          console.log('🔍 Processing array key:', firstArrayKey, 'with data:', arrayData);
+          
+          if (arrayData.length > 0 && typeof arrayData[0] === 'object') {
+            const itemKeys = Object.keys(arrayData[0]);
+            console.log('🔍 Array item keys:', itemKeys);
+            return (
+              <div className="overflow-x-auto">
+                <div className="mb-2 text-sm text-cymbal-text-secondary">
+                  <span className="font-medium">{firstArrayKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                </div>
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-cymbal-border">
+                      {itemKeys.map((key) => (
+                        <th key={key} className="text-left py-2 px-3 text-cymbal-text-primary font-semibold">
+                          {key}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {arrayData.map((item, index) => (
+                      <tr key={index} className="border-b border-cymbal-border/30 hover:bg-slate-800/50">
+                        {itemKeys.map((key) => (
+                          <td key={key} className="py-2 px-3 text-cymbal-text-primary">
+                            {typeof item[key] === 'object' && item[key] !== null ? (
+                              <pre className="text-xs overflow-x-auto whitespace-pre-wrap">{JSON.stringify(item[key], null, 2)}</pre>
+                            ) : (
+                              String(item[key])
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          }
+        }
+        
+        // Fallback for regular objects
+        console.log('🔍 Using fallback object rendering');
         return (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
@@ -316,6 +502,7 @@ export const HomePage: React.FC = () => {
         );
       }
       
+      console.log('🔍 Using string fallback');
       return <div className="text-cymbal-text-primary">{String(data)}</div>;
     } catch (error) {
       console.error('Error rendering JSON table:', error);
@@ -493,11 +680,24 @@ export const HomePage: React.FC = () => {
     }
   }, [userName]);
 
+  // Fetch transaction history when component mounts
+  useEffect(() => {
+    fetchTransactionHistory();
+  }, []);
+
   const handleSendMessage = () => {
     if (message.trim()) {
       setChatHistory((prev) => [...prev, { text: message, sender: 'user' }]);
       agentRef.current?.sendText(message, selectedAgentId || undefined);
       setMessage('');
+      
+
+    }
+  };
+
+  const handleSpeechTranscript = (transcript: string) => {
+    if (transcript.trim()) {
+      setMessage(transcript);
     }
   };
 
@@ -508,14 +708,7 @@ export const HomePage: React.FC = () => {
     agentRef.current?.sendText(message, agent.id);
   };
 
-  const toggleRecording = () => {
-    if (isRecording) {
-      agentRef.current?.stopAudio();
-    } else {
-      agentRef.current?.startAudio(selectedAgentId || undefined);
-    }
-    setIsRecording(!isRecording);
-  };
+
 
   return (
     <div className="min-h-screen flex flex-col text-cymbal-text-primary" style={{ backgroundColor: '#000' }}>
@@ -529,7 +722,7 @@ export const HomePage: React.FC = () => {
           backgroundPosition: 'center bottom',
         }}
       >
-        <div className="text-center pt-8 sm:pt-12 md:pt-16 lg:pt-24 px-4 sm:px-6">
+        <div className="text-center pt-8 px-4 sm:px-6">
           <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-slate-300">Meet your Orchestra</h2>
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-200 to-slate-400 mt-2">
             The Rhythm of your Wallet
@@ -540,19 +733,25 @@ export const HomePage: React.FC = () => {
         <div className="flex-1 flex items-end justify-center pb-8 sm:pb-12 md:pb-16 lg:pb-24 px-4 sm:px-6 mt-8 sm:mt-12">
           <div className="flex items-end justify-center gap-4 sm:gap-6 md:gap-8 lg:gap-10 flex-wrap sm:flex-nowrap">
             {AGENTS.map((agent) => (
-              <div key={agent.id} className="relative group flex flex-col items-center cursor-pointer mb-4 sm:mb-0" onClick={() => handleSelectAgent(agent)}>
-                <div className={`relative h-24 w-24 sm:h-28 sm:w-28 md:h-32 md:w-32 lg:h-36 lg:w-36 xl:h-40 xl:w-40 rounded-full overflow-hidden bg-black/70 border-2 shadow-xl transition-all ${selectedAgentId === agent.id ? 'border-cymbal-accent' : 'border-cymbal-border'}`}>
-                  <img src={agent.icon} alt={agent.instrument} className="h-full w-full object-contain p-3 sm:p-4" />
-                  {/* spotlight */}
-                  <div className={`pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${isSpeaking ? '!opacity-100' : ''}`}>
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 h-40 w-40 rounded-full blur-2xl" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.1) 60%, rgba(255,255,255,0) 70%)' }} />
+              <FollowerPointerCard
+                key={agent.id}
+                title="Choose your Agent!"
+                className="cursor-pointer"
+              >
+                <div className="relative group flex flex-col items-center cursor-pointer mb-4 sm:mb-0" onClick={() => handleSelectAgent(agent)}>
+                  <div className={`relative h-24 w-24 sm:h-28 sm:w-28 md:h-32 md:w-32 lg:h-36 lg:w-36 xl:h-40 xl:w-40 rounded-full overflow-hidden bg-black/70 border-2 shadow-xl transition-all ${selectedAgentId === agent.id ? 'border-cymbal-accent' : 'border-cymbal-border'}`}>
+                    <img src={agent.icon} alt={agent.instrument} className="h-full w-full object-contain p-3 sm:p-4" />
+                    {/* spotlight */}
+                    <div className={`pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${isSpeaking ? '!opacity-100' : ''}`}>
+                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 h-40 w-40 rounded-full blur-2xl" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.1) 60%, rgba(255,255,255,0) 70%)' }} />
+                    </div>
+                  </div>
+                  <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-slate-900/60 border border-cymbal-border rounded-lg text-center w-32 sm:w-40 md:w-48">
+                    <p className="font-bold text-sm sm:text-base md:text-lg text-cymbal-text-primary truncate">{agent.instrument}</p>
+                    <p className="text-xs sm:text-sm text-cymbal-text-secondary">{agent.name}, your {agent.role}</p>
                   </div>
                 </div>
-                <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-slate-900/60 border border-cymbal-border rounded-lg text-center w-32 sm:w-40 md:w-48">
-                  <p className="font-bold text-sm sm:text-base md:text-lg text-cymbal-text-primary truncate">{agent.instrument}</p>
-                  <p className="text-xs sm:text-sm text-cymbal-text-secondary">{agent.name}, your {agent.role}</p>
-                </div>
-              </div>
+              </FollowerPointerCard>
             ))}
           </div>
         </div>
@@ -624,53 +823,69 @@ export const HomePage: React.FC = () => {
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                 <input
-                  className="flex-1 rounded-lg bg-slate-900 text-cymbal-text-primary placeholder-slate-400 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base outline-none focus:ring-2 focus:ring-cymbal-accent border border-cymbal-border"
-                  placeholder="Type a message..."
+                  className={`flex-1 rounded-lg bg-slate-900 text-cymbal-text-primary placeholder-slate-400 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base outline-none focus:ring-2 focus:ring-cymbal-accent border transition-colors ${
+                    isSpeechToTextActive 
+                      ? 'border-red-400/50 bg-red-400/5' 
+                      : 'border-cymbal-border'
+                  }`}
+                  placeholder={
+                    isSpeechToTextActive 
+                      ? "Listening..." 
+                      : "Type a message..."
+                  }
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSendMessage();
                   }}
-                  disabled={isRecording}
+                  disabled={isSpeechToTextActive}
                 />
                 <div className="flex items-center space-x-2">
+                  <SpeechToText
+                    onTranscript={handleSpeechTranscript}
+                    isRecording={isSpeechToTextActive}
+                    onRecordingChange={setIsSpeechToTextActive}
+                    disabled={!connected}
+                  />
                   <button
-                    onClick={toggleRecording}
-                    aria-label="Voice input"
-                    className={`rounded-lg border border-cymbal-border bg-slate-900 hover:bg-slate-800 text-cymbal-text-primary px-2 sm:px-3 py-2 sm:py-3 transition-colors ${isRecording ? 'animate-pulse' : ''}`}
+                    onClick={handleSendMessage}
+                    disabled={!connected}
+                    className={`rounded-lg font-semibold px-3 sm:px-5 py-2 sm:py-3 text-sm sm:text-base transition-colors ${
+                      connected
+                        ? 'bg-cymbal-accent text-cymbal-deep-dark hover:bg-cymbal-accent-hover'
+                        : 'bg-slate-600 text-slate-400 cursor-not-allowed'
+                    }`}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      className="h-4 w-4 sm:h-5 sm:w-5"
-                    >
-                      <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z" />
-                      <path d="M19 11a1 1 0 1 0-2 0 5 5 0 1 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.92V21H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-3.08A7 7 0 0 0 19 11Z" />
-                    </svg>
+                    {connected ? 'Send' : 'Connecting...'}
                   </button>
-                  {isRecording ? (
-                    <button
-                      onClick={toggleRecording}
-                      className="rounded-lg bg-red-600 text-white font-semibold px-3 sm:px-5 py-2 sm:py-3 text-sm sm:text-base hover:bg-red-700 transition-colors"
-                    >
-                      Stop
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleSendMessage}
-                      className="rounded-lg bg-cymbal-accent text-cymbal-deep-dark font-semibold px-3 sm:px-5 py-2 sm:py-3 text-sm sm:text-base hover:bg-cymbal-accent-hover transition-colors"
-                    >
-                      {connected ? 'Send' : 'Connecting...'}
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
 
-            {/* Right side: JSON Data Table */}
-            <div className="xl:col-span-1">
-              <div className="bg-slate-900/70 border border-cymbal-border rounded-lg p-3 sm:p-4 h-full">
+            {/* Right side: Transaction Chart and JSON Data Table */}
+            <div className="xl:col-span-1 space-y-4">
+              {/* Transaction History Chart */}
+              <div className="bg-slate-900/70 border border-cymbal-border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-cymbal-text-primary">Transaction History</h3>
+                  <button
+                    onClick={fetchTransactionHistory}
+                    disabled={isLoadingTransactions}
+                    className="text-xs text-cymbal-accent hover:text-cymbal-accent-hover transition-colors px-2 py-1 rounded border border-cymbal-accent/30 hover:border-cymbal-accent/50 disabled:opacity-50"
+                    title="Refresh transaction data"
+                  >
+                    {isLoadingTransactions ? 'Loading...' : 'Refresh'}
+                  </button>
+                </div>
+                <TransactionHistoryChart 
+                  transactions={transactions}
+                  chartType={chartType}
+                  onChartTypeChange={setChartType}
+                />
+              </div>
+              
+              {/* JSON Data Table */}
+              <div className="bg-slate-900/70 border border-cymbal-border rounded-lg p-3 sm:p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="font-semibold text-cymbal-text-primary">Structured Data</h3>

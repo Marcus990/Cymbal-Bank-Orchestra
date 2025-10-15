@@ -1,10 +1,14 @@
 a2a-sdk
 google-cloud-aiplatform
-uvicorn
+uvicorn>=0.34.0
 python-dotenv
 asyncclick
 gunicorn
-google-adk
+google-adk>=1.10.0
 spotipy
 stripe
-google-oauth-lib
+websockets>=15.0
+fastapi>=0.115.0
+starlette>=0.46.2
+anyio>=4.9.0
+httpx>=0.28.1

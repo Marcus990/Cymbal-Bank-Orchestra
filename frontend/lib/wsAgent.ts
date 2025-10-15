@@ -50,7 +50,7 @@ export class RealtimeAgentClient {
 
   async connect(isAudio: boolean = false) {
     this.isAudioMode = isAudio;
-    const defaultWs = `ws://${window.location.hostname}:8000`;
+    const defaultWs = `ws://${window.location.hostname}:8001`;
     const base = (import.meta as any).env?.VITE_BACKEND_WS_URL || defaultWs;
     const wsUrl = `${base.replace(/\/$/, '')}/ws/${this.sessionId}?is_audio=${String(isAudio)}`;
 
