@@ -13,6 +13,9 @@ This project is a demonstration of agentic AI architecture for financial service
 - **Comprehensive Banking Features**: Account management, transaction tracking, goal setting, calendar scheduling, and financial insights
 - **Modern UI**: React-based frontend with real-time updates and interactive visualizations
 
+## Excalidraw Link
+https://excalidraw.com/#room=9c8106e276ad8dc6ae97,zFeWLgE09u4YL8MWHNox7A
+
 ## 🏗️ Architecture
 
 ### Backend (`backend/no-name-agent/`)
